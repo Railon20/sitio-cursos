@@ -1,0 +1,41 @@
+{
+  "name": "sitio-limpio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "clsx": "^2.1.1",
+    "json2csv": "^6.0.0-alpha.2",
+    "lucide-react": "^0.488.0",
+    "mercadopago": "^2.4.0",
+    "next": "14.1.0",
+    "pdf-lib": "^1.17.1",
+    "postgres": "^3.4.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-hot-toast": "^2.5.2",
+    "react-markdown": "^10.1.0",
+    "recharts": "^2.15.3",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "resend": "^4.4.0",
+    "tailwind-merge": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/json2csv": "^5.0.7",
+    "@types/node": "22.14.1",
+    "@types/react": "19.1.2",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "prisma": "^6.6.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.0.0"
+  }
+}
