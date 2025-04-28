@@ -1,49 +1,48 @@
 // 📁 src/app/curso/[id]/page.tsx
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
-import { LucideArrowLeft, LucideArrowRight, LucideAlertCircle } from 'lucide-react';
+import {
+  LucideArrowLeft,
+  LucideArrowRight,
+  LucideAlertCircle,
+} from 'lucide-react';
 
-const ADMIN_EXCLUDED_COURSE_ID = 'c281263d-666b-4ca9-817f-476f1911ec8c'; // ← reemplazá con tu ID de prueba
+const ADMIN_EXCLUDED_COURSE_ID = 'c281263d-666b-4ca9-817f-476f1911ec8c'; // <- poné aquí tu ID de prueba
 
 export default function CursoDetalle() {
-  const supabase = createPagesBrowserClient();
   const router = useRouter();
-  const { id } = useParams();
+  const { id } = useParams(); 
+  const supabase = createPagesBrowserClient();
 
-  const [course, setCourse] = useState<any>(null);
+  const [course, setCourse] = useState<any | null>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [session, setSession] = useState<any>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData() {
       setLoading(true);
 
-      // 1. Obtener sesión
+      // 1) Sesión
       const {
         data: { session },
       } = await supabase.auth.getSession();
       setSession(session);
 
-      // 2. Obtener datos del curso
+      // 2) Curso
       const { data: courseData, error: courseErr } = await supabase
         .from('courses')
         .select('*')
         .eq('id', id)
         .single();
-      if (courseErr || !courseData) {
-        setCourse(null);
-      } else {
-        setCourse(courseData);
-      }
+      setCourse(courseErr ? null : courseData);
 
-      // 3. Obtener módulos
+      // 3) Módulos
       const { data: modData } = await supabase
         .from('modules')
         .select('*')
@@ -51,12 +50,11 @@ export default function CursoDetalle() {
         .order('order_number');
       setModules(modData || []);
 
-      // 4. Determinar inscripción
+      // 4) Inscripción
       let enrolled = false;
       if (session) {
         const isAdmin = session.user.user_metadata?.role === 'admin';
         if (isAdmin && id !== ADMIN_EXCLUDED_COURSE_ID) {
-          // Los admins están inscritos en todos salvo el de prueba
           enrolled = true;
         } else {
           const { data: ins } = await supabase
@@ -71,39 +69,39 @@ export default function CursoDetalle() {
       setIsEnrolled(enrolled);
 
       setLoading(false);
-    };
+    }
 
     fetchData();
   }, [id, supabase]);
 
   const handleInscribir = async () => {
-    if (!session) return router.push('/login');
-    if (course.price > 0) return iniciarPago();
-
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    if (course.price > 0) {
+      // inicia Mercado Pago
+      const res = await fetch('/api/crear-preferencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: course.title,
+          price: course.price,
+          courseId: course.id,
+          userId: session.user.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.init_point) window.location.href = data.init_point;
+      return;
+    }
+    // inscripción gratuita
     const { error } = await supabase
       .from('user_courses')
       .insert([{ user_id: session.user.id, course_id: id }]);
     if (!error) {
-      setIsEnrolled(true);
       router.push(`/mi-curso/${id}`);
     }
-  };
-
-  const iniciarPago = async () => {
-    if (!session) return router.push('/login');
-    const res = await fetch('/api/crear-preferencia', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: course.title,
-        price: course.price,
-        courseId: course.id,
-        userId: session.user.id,
-      }),
-    });
-    const data = await res.json();
-    if (data.init_point) window.location.href = data.init_point;
-    else alert('Error al iniciar pago');
   };
 
   if (loading) {
@@ -121,6 +119,7 @@ export default function CursoDetalle() {
   return (
     <main className="min-h-screen bg-white px-4 py-8">
       <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <header className="flex justify-between items-center mb-6">
           <Button
             variant="outline"
@@ -132,30 +131,38 @@ export default function CursoDetalle() {
           <h1 className="text-2xl font-bold">{course.title}</h1>
         </header>
 
+        {/* Imagen sin recortes */}
         <img
           src={course.image}
           alt={course.title}
-          className="w-full h-64 object-cover rounded-xl mb-6"
+          className="w-full h-auto rounded-xl mb-6"
         />
+
+        {/* Descripción y meta */}
         <p className="text-gray-700 mb-4">{course.description}</p>
         <p className="text-sm text-gray-500 mb-6">
-          Categoría: {course.category} | Dificultad: {course.difficulty} |{' '}
+          Categoría: {course.category} • Dificultad: {course.difficulty} •{' '}
           {course.price > 0 ? `Precio: $${course.price}` : 'Gratis'}
         </p>
 
+        {/* Botón de inscripción o acceso */}
         {!isEnrolled ? (
-          <Button onClick={handleInscribir} className="w-full py-3">
+          <Button
+            onClick={handleInscribir}
+            className="w-full py-3"
+          >
             {course.price > 0 ? 'Comprar curso' : 'Inscribirme'}
           </Button>
         ) : (
           <Button
-            onClick={() => router.push(`/mi-curso/${course.id}`)}
+            onClick={() => router.push(`/mi-curso/${id}`)}
             className="w-full py-3 bg-emerald-600 text-white hover:bg-emerald-700"
           >
             Ir al curso <LucideArrowRight className="w-4 h-4 ml-2" />
           </Button>
         )}
 
+        {/* Listado de módulos */}
         <section className="mt-10">
           <h2 className="text-xl font-semibold mb-4">Contenido</h2>
           {modules.length === 0 ? (
