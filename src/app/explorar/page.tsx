@@ -131,7 +131,7 @@ export default function ExplorarCursosPage() {
                   <img
                     src={course.image}
                     alt={course.title}
-                    className="w-full h-40 object-cover rounded-xl mb-4"
+                    className="w-full h-40 object-contain rounded bg-gray-100"
                   />
                   <h3 className="text-xl font-bold mb-1">{course.title}</h3>
                   <p className="text-gray-600 text-sm mb-2">{course.description}</p>

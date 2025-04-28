@@ -111,7 +111,7 @@ export default function CursoDetalle() {
             <img
               src={course.image}
               alt={course.title}
-              className="w-full h-60 object-cover rounded-xl mb-6"
+              className="w-full max-h-[600px] object-contain rounded-lg bg-gray-100 mb-6"
             />
             <h1 className="text-3xl font-bold text-sky-700 mb-2">{course.title}</h1>
             <p className="text-gray-600 mb-2">{course.description}</p>
