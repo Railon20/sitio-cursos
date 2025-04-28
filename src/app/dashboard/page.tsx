@@ -28,48 +28,56 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const getSessionAndData = async () => {
+    const fetchCourses = async () => {
       setLoading(true);
-
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (error || !session) {
+  
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+  
+      if (!session) {
         router.push('/login');
         return;
       }
-
-      setUserEmail(session.user.email || '');
-      setIsAdmin(session.user.user_metadata?.role === 'admin');
-
-      const { data: enrolledCourses, error: courseError } = await supabase
-        .from('user_courses')
-        .select('course_id, courses(id, title, description, image)')
-        .eq('user_id', session.user.id);
-
-      if (courseError) {
-        setError(courseError.message);
+  
+      const isAdmin = session.user.user_metadata?.role === 'admin';
+      const adminExcludedCourseId = 'ID_DEL_CURSO_DE_PRUEBA'; // ← poné el ID real del curso que querés excluir
+  
+      if (isAdmin) {
+        // Admin: traer todos los cursos, excepto el de prueba
+        const { data: allCourses, error } = await supabase
+          .from('courses')
+          .select('*')
+          .not('id', 'eq', adminExcludedCourseId);
+  
+        if (error) {
+          console.error(error.message);
+        } else {
+          setCourses(allCourses || []);
+        }
       } else {
-        const formattedCourses = enrolledCourses.map((entry: any) => ({
-          id: entry.course_id,
-          ...entry.courses,
-        }));
-        setCourses(formattedCourses);
+        // Usuario normal: traer sus cursos inscriptos
+        const { data: enrolledCourses, error } = await supabase
+          .from('user_courses')
+          .select('courses(id, title, description, image)')
+          .eq('user_id', session.user.id);
+  
+        if (error) {
+          console.error(error.message);
+        } else {
+          const formattedCourses = enrolledCourses?.map((entry: any) => ({
+            ...entry.courses
+          })) || [];
+          setCourses(formattedCourses);
+        }
       }
-
-      const { data: popular, error: popError } = await supabase
-        .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(4);
-
-      if (!popError && popular) setPopularCourses(popular);
-
+  
       setLoading(false);
     };
-
-    getSessionAndData();
+  
+    fetchCourses();
   }, [router, supabase]);
-
+  
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');

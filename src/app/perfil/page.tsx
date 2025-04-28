@@ -24,59 +24,60 @@ export default function PerfilPage() {
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [modalAbierta, setModalAbierta] = useState(false);
+    const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
-    const loadProfile = async () => {
-      // 1. Obtener sesión
+    const fetchCourses = async () => {
+      setLoading(true);
+  
       const {
-        data: { session },
+        data: { session }
       } = await supabase.auth.getSession();
+  
       if (!session) {
         router.push('/login');
         return;
       }
-      setSession(session);
-      setUserEmail(session.user.email || '');
-
-      // 2. Cargar cursos e progreso
-      const { data: enrolledCourses } = await supabase
-        .from('user_courses')
-        .select('courses(id, title, description, image)')
-        .eq('user_id', session.user.id);
-      const formatted = enrolledCourses?.map((e: any) => e.courses) || [];
-      setCourses(formatted);
-
-      const progressMap: Record<string, { completed: number; total: number }> = {};
-      for (const curso of formatted) {
-        const { data: mods } = await supabase
-          .from('modules')
-          .select('id')
-          .eq('course_id', curso.id);
-        const { data: completed } = await supabase
-          .from('user_progress')
-          .select('module_id')
+  
+      const isAdmin = session.user.user_metadata?.role === 'admin';
+      const adminExcludedCourseId = '87f0e7c2-9555-4e18-a454-d5aa18737723'; // ← poné el ID real del curso que querés excluir
+  
+      if (isAdmin) {
+        // Admin: traer todos los cursos, excepto el de prueba
+        const { data: allCourses, error } = await supabase
+          .from('courses')
+          .select('*')
+          .not('id', 'eq', adminExcludedCourseId);
+  
+        if (error) {
+          console.error(error.message);
+        } else {
+          setCourses(allCourses || []);
+        }
+      } else {
+        // Usuario normal: traer sus cursos inscriptos
+        const { data: enrolledCourses, error } = await supabase
+          .from('user_courses')
+          .select('courses(id, title, description, image)')
           .eq('user_id', session.user.id);
-        const total = mods?.length || 0;
-        const completedCount = completed?.filter(p =>
-          mods?.some(m => m.id === p.module_id)
-        ).length || 0;
-        progressMap[curso.id] = { completed: completedCount, total };
+  
+        if (error) {
+          console.error(error.message);
+        } else {
+          const formattedCourses = enrolledCourses?.map((entry: any) => ({
+            ...entry.courses
+          })) || [];
+          setCourses(formattedCourses);
+        }
       }
-      setProgressMap(progressMap);
-      setLoadingCourses(false);
-
-      // 3. Cargar pagos
-      const { data: pagos } = await supabase
-        .from('payments')
-        .select('id, amount, status, paid_at, mp_payment_id, courses(title)')
-        .eq('user_id', session.user.id)
-        .order('paid_at', { ascending: false });
-      setPayments(pagos || []);
-      setLoadingPayments(false);
+  
+      setLoading(false);
     };
-
-    loadProfile();
+  
+    fetchCourses();
   }, [router, supabase]);
+  
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
