@@ -27,57 +27,54 @@ export default function PerfilPage() {
     const [loading, setLoading] = useState(true);
   
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      setLoading(true);
-  
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
-  
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-  
-      const isAdmin = session.user.user_metadata?.role === 'admin';
-      const adminExcludedCourseId = '87f0e7c2-9555-4e18-a454-d5aa18737723'; // ← poné el ID real del curso que querés excluir
-  
-      if (isAdmin) {
-        // Admin: traer todos los cursos, excepto el de prueba
-        const { data: allCourses, error } = await supabase
-          .from('courses')
-          .select('*')
-          .not('id', 'eq', adminExcludedCourseId);
-  
-        if (error) {
-          console.error(error.message);
-        } else {
-          setCourses(allCourses || []);
+    useEffect(() => {
+      const fetchData = async () => {
+        setLoading(true);
+    
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) {
+          router.push('/login');
+          return;
         }
-      } else {
-        // Usuario normal: traer sus cursos inscriptos
-        const { data: enrolledCourses, error } = await supabase
-          .from('user_courses')
-          .select('courses(id, title, description, image)')
-          .eq('user_id', session.user.id);
-  
-        if (error) {
-          console.error(error.message);
+    
+        setUserEmail(session.user.email || '');
+    
+        const isAdmin = session.user.user_metadata?.role === 'admin';
+        const adminExcludedCourseId = 'ID_DEL_CURSO_DE_PRUEBA'; // ⚡ poné el id correcto
+    
+        if (isAdmin) {
+          const { data: allCourses, error: coursesError } = await supabase
+            .from('courses')
+            .select('id, title, description, image')
+            .not('id', 'eq', adminExcludedCourseId);
+    
+          if (coursesError) {
+            console.error('Error trayendo cursos de admin:', coursesError.message);
+          } else {
+            setCourses(allCourses || []);
+          }
         } else {
-          const formattedCourses = enrolledCourses?.map((entry: any) => ({
-            ...entry.courses
-          })) || [];
-          setCourses(formattedCourses);
+          const { data: enrolledCourses, error: enrolledError } = await supabase
+            .from('user_courses')
+            .select('courses(id, title, description, image)')
+            .eq('user_id', session.user.id);
+    
+          if (enrolledError) {
+            console.error('Error trayendo cursos de usuario:', enrolledError.message);
+          } else {
+            const formattedCourses = enrolledCourses?.map((entry: any) => ({
+              ...entry.courses
+            })) || [];
+            setCourses(formattedCourses);
+          }
         }
-      }
-  
-      setLoading(false);
-    };
-  
-    fetchCourses();
-  }, [router, supabase]);
-  
+    
+        setLoading(false);
+      };
+    
+      fetchData();
+    }, [router, supabase]);
+    
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

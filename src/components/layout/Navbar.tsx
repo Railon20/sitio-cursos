@@ -63,6 +63,10 @@ export default function Navbar() {
             <Compass className="w-5 h-5" /> Explorar
           </Link>
 
+          <Link href="/mi-aprendizaje" className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800">
+            Mi Aprendizaje
+          </Link>
+
           <Link
             href="/ranking"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800"
