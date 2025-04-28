@@ -1,3 +1,5 @@
+// 📁 src/app/dashboard/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -28,7 +30,7 @@ export default function DashboardPage() {
     const load = async () => {
       setLoading(true);
 
-      // 1. Sesión
+      // 1️⃣ Sesión
       const {
         data: { session },
         error: sessErr
@@ -41,7 +43,7 @@ export default function DashboardPage() {
       setUserEmail(session.user.email || '');
       setIsAdmin(session.user.user_metadata?.role === 'admin');
 
-      // 2. Cursos propios
+      // 2️⃣ Cursos propios
       const { data: enrolled, error: enErr } = await supabase
         .from('user_courses')
         .select('courses(id, title, description, image)')
@@ -55,7 +57,7 @@ export default function DashboardPage() {
         );
       }
 
-      // 3. Cursos populares
+      // 3️⃣ Cursos populares
       const { data: pops, error: popErr } = await supabase
         .from('courses')
         .select('id, title, description, image')
@@ -80,6 +82,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-white p-6">
+      {/* Header */}
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Hola, {userEmail}</h1>
         <div className="flex items-center gap-4">
@@ -102,6 +105,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {/* Tus cursos */}
       <section className="mb-12">
         <h2 className="text-xl font-semibold mb-4">Tus cursos</h2>
         {courses.length === 0 ? (
@@ -109,29 +113,55 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((c) => (
-              <div key={c.id} className="border rounded-lg p-4 shadow">
-                <img src={c.image} alt={c.title} className="w-full h-32 object-cover rounded mb-4" />
-                <h3 className="font-bold">{c.title}</h3>
-                <p className="text-sm text-gray-600 mb-4">{c.description}</p>
-                <Button
-                  onClick={() => router.push(`/mi-curso/${c.id}`)}
-                  className="flex items-center gap-2"
-                >
-                  Ir al curso <LucideArrowRight className="w-4 h-4" />
-                </Button>
+              <div key={c.id} className="border rounded-lg p-4 shadow flex flex-col">
+                <img
+                  src={c.image}
+                  alt={c.title}
+                  className="w-full h-auto rounded mb-4"
+                />
+                <h3 className="font-bold mb-2">{c.title}</h3>
+                <p className="text-sm text-gray-600 flex-1">{c.description}</p>
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push(`/curso/${c.id}`)}
+                    className="flex-1"
+                  >
+                    Ver detalle
+                  </Button>
+                  <Button
+                    onClick={() => router.push(`/mi-curso/${c.id}`)}
+                    className="flex-1 flex items-center justify-center gap-2"
+                  >
+                    Ir al curso <LucideArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </section>
 
+      {/* Cursos populares */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Cursos populares</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {popular.map((c) => (
-            <div key={c.id} className="border rounded-lg p-4 shadow">
-              <img src={c.image} alt={c.title} className="w-full h-32 object-cover rounded mb-4" />
-              <h3 className="font-bold">{c.title}</h3>
+            <div key={c.id} className="border rounded-lg p-4 shadow flex flex-col">
+              <img
+                src={c.image}
+                alt={c.title}
+                className="w-full h-auto rounded mb-4"
+              />
+              <h3 className="font-bold mb-2">{c.title}</h3>
+              <p className="text-sm text-gray-600 flex-1">{c.description}</p>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/curso/${c.id}`)}
+                className="mt-4"
+              >
+                Ver detalle
+              </Button>
             </div>
           ))}
         </div>
