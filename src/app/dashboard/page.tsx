@@ -4,131 +4,138 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
-import { LucideBookOpen, LucideLogOut, LucideArrowRight, LucideUser, LucideBarChart2, LucideShield } from 'lucide-react';
-import { useRedirect } from '@/hooks/useRedirect';
+import { LucideLogOut, LucideArrowRight, LucideShield } from 'lucide-react';
 
 interface Course {
   id: string;
   title: string;
   description: string;
   image: string;
-  category?: string;
 }
 
 export default function DashboardPage() {
-  useRedirect({ requireAuth: true, fallback: '/' });
-  const router = useRouter();
   const supabase = createPagesBrowserClient();
+  const router = useRouter();
 
   const [userEmail, setUserEmail] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [popularCourses, setPopularCourses] = useState<Course[]>([]);
+  const [popular, setPopular] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const load = async () => {
       setLoading(true);
-  
+
+      // 1. Sesión
       const {
-        data: { session }
+        data: { session },
+        error: sessErr
       } = await supabase.auth.getSession();
-  
-      if (!session) {
+      if (sessErr || !session) {
         router.push('/login');
         return;
       }
-  
-      const isAdmin = session.user.user_metadata?.role === 'admin';
-      const adminExcludedCourseId = 'ID_DEL_CURSO_DE_PRUEBA'; // ← poné el ID real del curso que querés excluir
-  
-      if (isAdmin) {
-        // Admin: traer todos los cursos, excepto el de prueba
-        const { data: allCourses, error } = await supabase
-          .from('courses')
-          .select('*')
-          .not('id', 'eq', adminExcludedCourseId);
-  
-        if (error) {
-          console.error(error.message);
-        } else {
-          setCourses(allCourses || []);
-        }
+
+      setUserEmail(session.user.email || '');
+      setIsAdmin(session.user.user_metadata?.role === 'admin');
+
+      // 2. Cursos propios
+      const { data: enrolled, error: enErr } = await supabase
+        .from('user_courses')
+        .select('courses(id, title, description, image)')
+        .eq('user_id', session.user.id);
+
+      if (enErr) {
+        setError(enErr.message);
       } else {
-        // Usuario normal: traer sus cursos inscriptos
-        const { data: enrolledCourses, error } = await supabase
-          .from('user_courses')
-          .select('courses(id, title, description, image)')
-          .eq('user_id', session.user.id);
-  
-        if (error) {
-          console.error(error.message);
-        } else {
-          const formattedCourses = enrolledCourses?.map((entry: any) => ({
-            ...entry.courses
-          })) || [];
-          setCourses(formattedCourses);
-        }
+        setCourses(
+          (enrolled || []).map((e: any) => e.courses)
+        );
       }
-  
+
+      // 3. Cursos populares
+      const { data: pops, error: popErr } = await supabase
+        .from('courses')
+        .select('id, title, description, image')
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (!popErr) setPopular(pops || []);
+
       setLoading(false);
     };
-  
-    fetchCourses();
+
+    load();
   }, [router, supabase]);
-  
-  const handleLogout = async () => {
+
+  const logout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
   };
 
-  const CourseGrid = ({ title, items }: { title: string; items: Course[] }) => (
-    <section className="mb-12">
-      <h2 className="text-2xl font-semibold mb-6">{title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.map((course) => (
-          <div key={course.id} className="bg-white rounded-2xl shadow hover:shadow-lg transition p-4 flex flex-col">
-            <img src={course.image} alt={course.title} className="w-full h-40 object-cover rounded-xl mb-4" />
-            <h3 className="text-xl font-bold mb-1">{course.title}</h3>
-            <p className="text-gray-600 text-sm mb-4 flex-1">{course.description}</p>
-            <Button onClick={() => router.push(`/curso/${course.id}`)} className="mt-auto flex items-center gap-2">
-              Ir al curso <LucideArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  if (loading) return <p className="p-6 text-center">Cargando dashboard…</p>;
+  if (error)   return <p className="p-6 text-center text-red-600">{error}</p>;
 
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-b from-sky-50 to-white px-4 pt-4 pb-16">
-      <div className="max-w-6xl mx-auto w-full">
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-1">Hola, {userEmail}</h2>
-            <p className="text-gray-600">Bienvenido de nuevo. Accedé a tus cursos y seguí aprendiendo.</p>
-          </div>
-          <div className="flex gap-2 mt-4 md:mt-0 flex-wrap">
-            {isAdmin && (
-              <Button onClick={() => router.push('/admin')} className="flex gap-2">
-                <LucideShield className="w-4 h-4" /> Panel de administración
-              </Button>
-            )}
-          </div>
+    <main className="min-h-screen bg-white p-6">
+      <header className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">Hola, {userEmail}</h1>
+        <div className="flex items-center gap-4">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin')}
+              className="flex items-center gap-2"
+            >
+              <LucideShield className="w-4 h-4" /> Panel de administración
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={logout}
+            className="flex items-center gap-2"
+          >
+            <LucideLogOut className="w-4 h-4" /> Cerrar sesión
+          </Button>
         </div>
+      </header>
 
-        {loading ? (
-          <p>Cargando datos...</p>
-        ) : error ? (
-          <p className="text-red-600">Error: {error}</p>
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold mb-4">Tus cursos</h2>
+        {courses.length === 0 ? (
+          <p className="text-gray-600">No estás inscripto en ningún curso.</p>
         ) : (
-          <>
-            <CourseGrid title="Tus cursos" items={courses} />
-            <CourseGrid title="Cursos populares" items={popularCourses} />
-          </>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.map((c) => (
+              <div key={c.id} className="border rounded-lg p-4 shadow">
+                <img src={c.image} alt={c.title} className="w-full h-32 object-cover rounded mb-4" />
+                <h3 className="font-bold">{c.title}</h3>
+                <p className="text-sm text-gray-600 mb-4">{c.description}</p>
+                <Button
+                  onClick={() => router.push(`/mi-curso/${c.id}`)}
+                  className="flex items-center gap-2"
+                >
+                  Ir al curso <LucideArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
-      </div>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Cursos populares</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {popular.map((c) => (
+            <div key={c.id} className="border rounded-lg p-4 shadow">
+              <img src={c.image} alt={c.title} className="w-full h-32 object-cover rounded mb-4" />
+              <h3 className="font-bold">{c.title}</h3>
+            </div>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

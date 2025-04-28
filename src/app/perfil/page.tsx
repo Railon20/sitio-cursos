@@ -2,15 +2,34 @@
 
 'use client';
 
-import { useEffect, useState, ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { LucideArrowRight, LucideLogOut, LucideUser } from 'lucide-react';
 import { useRedirect } from '@/hooks/useRedirect';
 
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+}
+interface Progress {
+  completed: number;
+  total: number;
+}
+interface Payment {
+    id: string;
+    amount: number;
+    status: string;
+    paid_at: string;
+    mp_payment_id: string;
+    // viene como arreglo [{ title }]
+    courses: { title: string }[];
+  }
 export default function PerfilPage() {
-  // Redirige si el usuario NO está logueado
+  // redirige si no hay sesión
   useRedirect({ requireAuth: true, fallback: '/' });
 
   const router = useRouter();
@@ -18,63 +37,103 @@ export default function PerfilPage() {
 
   const [session, setSession] = useState<any>(null);
   const [userEmail, setUserEmail] = useState('');
-  const [courses, setCourses] = useState<any[]>([]);
-  const [progressMap, setProgressMap] = useState<Record<string, { completed: number; total: number }>>({});
-  const [payments, setPayments] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [progressMap, setProgressMap] = useState<Record<string, Progress>>({});
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [modalAbierta, setModalAbierta] = useState(false);
-    const [loading, setLoading] = useState(true);
-  
 
-    useEffect(() => {
-      const fetchData = async () => {
-        setLoading(true);
-    
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session) {
-          router.push('/login');
-          return;
-        }
-    
-        setUserEmail(session.user.email || '');
-    
-        const isAdmin = session.user.user_metadata?.role === 'admin';
-        const adminExcludedCourseId = 'ID_DEL_CURSO_DE_PRUEBA'; // ⚡ poné el id correcto
-    
-        if (isAdmin) {
-          const { data: allCourses, error: coursesError } = await supabase
-            .from('courses')
-            .select('id, title, description, image')
-            .not('id', 'eq', adminExcludedCourseId);
-    
-          if (coursesError) {
-            console.error('Error trayendo cursos de admin:', coursesError.message);
-          } else {
-            setCourses(allCourses || []);
-          }
+  useEffect(() => {
+    const loadProfile = async () => {
+      // 1. Obtener sesión
+      const {
+        data: { session },
+        error: sessErr
+      } = await supabase.auth.getSession();
+      if (sessErr || !session) {
+        router.push('/login');
+        return;
+      }
+      setSession(session);
+      setUserEmail(session.user.email || '');
+
+      const isAdmin = session.user.user_metadata?.role === 'admin';
+      const adminExcludedCourseId = 'ID_DEL_CURSO_DE_PRUEBA'; // ← reemplazá con tu ID
+
+      // 2. Traer cursos
+      let fetchedCourses: Course[] = [];
+      if (isAdmin) {
+        const { data: allCourses, error: coursesErr } = await supabase
+          .from('courses')
+          .select('id, title, description, image')
+          .not('id', 'eq', adminExcludedCourseId);
+        if (coursesErr) {
+          console.error('Error trayendo cursos (admin):', coursesErr.message);
         } else {
-          const { data: enrolledCourses, error: enrolledError } = await supabase
-            .from('user_courses')
-            .select('courses(id, title, description, image)')
-            .eq('user_id', session.user.id);
-    
-          if (enrolledError) {
-            console.error('Error trayendo cursos de usuario:', enrolledError.message);
-          } else {
-            const formattedCourses = enrolledCourses?.map((entry: any) => ({
-              ...entry.courses
-            })) || [];
-            setCourses(formattedCourses);
-          }
+          fetchedCourses = allCourses;
         }
-    
-        setLoading(false);
-      };
-    
-      fetchData();
-    }, [router, supabase]);
-    
+      } else {
+        const { data: enrolled, error: enrollErr } = await supabase
+          .from('user_courses')
+          .select('courses(id, title, description, image)')
+          .eq('user_id', session.user.id);
+        if (enrollErr) {
+          console.error('Error trayendo cursos (usuario):', enrollErr.message);
+        } else {
+          fetchedCourses = (enrolled || []).map((e: any) => e.courses);
+        }
+      }
+      setCourses(fetchedCourses);
+      setLoadingCourses(false);
+
+      // 3. Calcular progreso (solo para usuarios)
+      if (!isAdmin) {
+        const map: Record<string, Progress> = {};
+        for (const c of fetchedCourses) {
+          const { data: mods } = await supabase
+            .from('modules')
+            .select('id')
+            .eq('course_id', c.id);
+          const moduleIds = mods?.map((m) => m.id) || [];
+          const total = moduleIds.length;
+          const { data: prog } = await supabase
+            .from('user_progress')
+            .select('module_id, completed')
+            .eq('user_id', session.user.id)
+            .in('module_id', moduleIds);
+          const completed =
+            prog?.filter((p) => p.completed).length || 0;
+          map[c.id] = { completed, total };
+        }
+        setProgressMap(map);
+      }
+
+      // 4. Traer pagos
+      const { data: rawPagos, error: payErr } = await supabase
+        .from('payments')
+        .select('id, amount, status, paid_at, mp_payment_id, courses(title)')
+        .eq('user_id', session.user.id)
+        .order('paid_at', { ascending: false });
+      if (payErr) {
+        console.error('Error trayendo pagos:', payErr.message);
+      } else {
+        // normalizamos para que `courses` sea siempre array
+        const pagosFormatted: Payment[] = (rawPagos || []).map((p: any) => ({
+            id: p.id,
+            amount: p.amount,
+            status: p.status,
+            paid_at: p.paid_at,
+            mp_payment_id: p.mp_payment_id,
+            courses: Array.isArray(p.courses) ? p.courses : [],
+          }));
+          setPayments(pagosFormatted);
+      }
+      setLoadingPayments(false);
+    };
+
+    loadProfile();
+  }, [router, supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -97,7 +156,11 @@ export default function PerfilPage() {
           <h1 className="text-3xl font-bold text-sky-700 flex items-center gap-2">
             <LucideUser className="w-6 h-6" /> Perfil de usuario
           </h1>
-          <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2">
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
             <LucideLogOut className="w-5 h-5" /> Cerrar sesión
           </Button>
         </header>
@@ -108,11 +171,9 @@ export default function PerfilPage() {
           <p className="text-gray-700 mb-2">
             Correo electrónico: <strong>{userEmail}</strong>
           </p>
-          <div className="flex gap-4 mt-4">
-            <Button variant="outline" onClick={handlePasswordReset}>
-              Cambiar contraseña
-            </Button>
-          </div>
+          <Button variant="outline" onClick={handlePasswordReset}>
+            Cambiar contraseña
+          </Button>
         </section>
 
         {/* Tus cursos */}
@@ -121,18 +182,27 @@ export default function PerfilPage() {
           {loadingCourses ? (
             <p>Cargando cursos...</p>
           ) : courses.length === 0 ? (
-            <p className="text-gray-500">Aún no estás inscripto en ningún curso.</p>
+            <p className="text-gray-500">
+              Aún no estás inscripto en ningún curso.
+            </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map(course => (
-                <div key={course.id} className="bg-white rounded-xl shadow p-4 flex flex-col">
+              {courses.map((course) => (
+                <div
+                  key={course.id}
+                  className="bg-white rounded-xl shadow p-4 flex flex-col"
+                >
                   <img
                     src={course.image}
                     alt={course.title}
                     className="w-full h-40 object-cover rounded mb-4"
                   />
-                  <h3 className="text-lg font-bold mb-2">{course.title}</h3>
-                  <p className="text-gray-600 text-sm mb-2 flex-1">{course.description}</p>
+                  <h3 className="text-lg font-bold mb-2">
+                    {course.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-2 flex-1">
+                    {course.description}
+                  </p>
 
                   {progressMap[course.id]?.total > 0 && (
                     <div className="mb-3">
@@ -145,7 +215,8 @@ export default function PerfilPage() {
                           className="h-2 bg-emerald-500 rounded-full"
                           style={{
                             width: `${
-                              (progressMap[course.id].completed / progressMap[course.id].total) *
+                              (progressMap[course.id].completed /
+                                progressMap[course.id].total) *
                               100
                             }%`,
                           }}
@@ -169,11 +240,13 @@ export default function PerfilPage() {
         {/* Facturación */}
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-4">Facturación</h2>
-          <Button onClick={() => setModalAbierta(true)}>Ver historial de pagos</Button>
+          <Button onClick={() => setModalAbierta(true)}>
+            Ver historial de pagos
+          </Button>
         </section>
       </div>
 
-      {/* Modal de historial de pagos */}
+      {/* Modal historial de pagos */}
       {modalAbierta && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white w-full max-w-xl rounded-xl shadow-lg p-6 relative">
@@ -184,20 +257,27 @@ export default function PerfilPage() {
               &times;
             </button>
 
-            <h3 className="text-xl font-semibold mb-4">Historial de pagos</h3>
+            <h3 className="text-xl font-semibold mb-4">
+              Historial de pagos
+            </h3>
 
             {loadingPayments ? (
               <p>Cargando pagos...</p>
             ) : payments.length === 0 ? (
-              <p className="text-gray-500">Aún no realizaste pagos.</p>
+              <p className="text-gray-500">
+                Aún no realizaste pagos.
+              </p>
             ) : (
               <ul className="space-y-4 max-h-96 overflow-y-auto">
-                {payments.map(pago => (
-                  <li key={pago.id} className="border rounded-lg p-4">
+                {payments.map((pago) => (
+                  <li
+                    key={pago.id}
+                    className="border rounded-lg p-4"
+                  >
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-medium">
-                        {pago.courses?.title || 'Curso eliminado'}
-                      </span>
+                    <span className="font-medium">
+    +                 {pago.courses[0]?.title ?? 'Curso eliminado'}
+    +               </span>
                       <span className="text-sm text-gray-600">
                         {new Date(pago.paid_at).toLocaleDateString()}
                       </span>
