@@ -27,14 +27,13 @@
       "static/chunks/main-app-2bf8c03815a09153.js",
       "static/chunks/app/error-6e454f6b2ef0b014.js"
     ],
-    "/admin/page": [
+    "/auth/page": [
       "static/chunks/webpack-23284575fdefa211.js",
       "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
       "static/chunks/69-a0d2778b274339b5.js",
       "static/chunks/main-app-2bf8c03815a09153.js",
       "static/chunks/51-ade30679f31a613f.js",
-      "static/chunks/714-80a446c7e055417a.js",
-      "static/chunks/app/admin/page-31aa7a31553c0b2b.js"
+      "static/chunks/app/auth/page-8962c59b343d561b.js"
     ],
     "/dashboard/page": [
       "static/chunks/webpack-23284575fdefa211.js",
@@ -45,7 +44,7 @@
       "static/chunks/714-80a446c7e055417a.js",
       "static/chunks/app/dashboard/page-cda7889943fc8d82.js"
     ],
-    "/login/page": [
+    "/admin/page": [
       "static/chunks/webpack-23284575fdefa211.js",
       "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
       "static/chunks/69-a0d2778b274339b5.js",
@@ -53,7 +52,7 @@
       "static/chunks/51-ade30679f31a613f.js",
       "static/chunks/714-80a446c7e055417a.js",
       "static/chunks/296-b3ccb90b00cfa57c.js",
-      "static/chunks/app/login/page-172474a01148f996.js"
+      "static/chunks/app/admin/page-98a150b08ab4b27f.js"
     ],
     "/explorar/page": [
       "static/chunks/webpack-23284575fdefa211.js",
@@ -65,20 +64,25 @@
       "static/chunks/296-b3ccb90b00cfa57c.js",
       "static/chunks/app/explorar/page-5ff9c103132e1834.js"
     ],
-    "/auth/page": [
+    "/mi-curso/[id]/page": [
       "static/chunks/webpack-23284575fdefa211.js",
       "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
       "static/chunks/69-a0d2778b274339b5.js",
       "static/chunks/main-app-2bf8c03815a09153.js",
       "static/chunks/51-ade30679f31a613f.js",
-      "static/chunks/app/auth/page-8962c59b343d561b.js"
+      "static/chunks/714-80a446c7e055417a.js",
+      "static/chunks/967-24c53bab138285df.js",
+      "static/chunks/app/mi-curso/[id]/page-980971d8e3d0886c.js"
     ],
-    "/pago-exitoso/page": [
+    "/login/page": [
       "static/chunks/webpack-23284575fdefa211.js",
       "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
       "static/chunks/69-a0d2778b274339b5.js",
       "static/chunks/main-app-2bf8c03815a09153.js",
-      "static/chunks/app/pago-exitoso/page-c07db9c2a5f4cb41.js"
+      "static/chunks/51-ade30679f31a613f.js",
+      "static/chunks/714-80a446c7e055417a.js",
+      "static/chunks/296-b3ccb90b00cfa57c.js",
+      "static/chunks/app/login/page-172474a01148f996.js"
     ],
     "/page": [
       "static/chunks/webpack-23284575fdefa211.js",
@@ -89,6 +93,20 @@
       "static/chunks/714-80a446c7e055417a.js",
       "static/chunks/792-bc2ddd443cd71d7b.js",
       "static/chunks/app/page-b2603ad8d2c193fc.js"
+    ],
+    "/pago-exitoso/page": [
+      "static/chunks/webpack-23284575fdefa211.js",
+      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
+      "static/chunks/69-a0d2778b274339b5.js",
+      "static/chunks/main-app-2bf8c03815a09153.js",
+      "static/chunks/app/pago-exitoso/page-c07db9c2a5f4cb41.js"
+    ],
+    "/pago-fallido/page": [
+      "static/chunks/webpack-23284575fdefa211.js",
+      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
+      "static/chunks/69-a0d2778b274339b5.js",
+      "static/chunks/main-app-2bf8c03815a09153.js",
+      "static/chunks/app/pago-fallido/page-d7cf3f355a9dd4c1.js"
     ],
     "/perfil/page": [
       "static/chunks/webpack-23284575fdefa211.js",
@@ -108,37 +126,12 @@
       "static/chunks/792-bc2ddd443cd71d7b.js",
       "static/chunks/app/mis-cursos/page-c5cb825630d2ca04.js"
     ],
-    "/mi-curso/[id]/page": [
-      "static/chunks/webpack-23284575fdefa211.js",
-      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
-      "static/chunks/69-a0d2778b274339b5.js",
-      "static/chunks/main-app-2bf8c03815a09153.js",
-      "static/chunks/51-ade30679f31a613f.js",
-      "static/chunks/714-80a446c7e055417a.js",
-      "static/chunks/967-24c53bab138285df.js",
-      "static/chunks/app/mi-curso/[id]/page-980971d8e3d0886c.js"
-    ],
-    "/pago-fallido/page": [
-      "static/chunks/webpack-23284575fdefa211.js",
-      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
-      "static/chunks/69-a0d2778b274339b5.js",
-      "static/chunks/main-app-2bf8c03815a09153.js",
-      "static/chunks/app/pago-fallido/page-d7cf3f355a9dd4c1.js"
-    ],
     "/privacidad/page": [
       "static/chunks/webpack-23284575fdefa211.js",
       "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
       "static/chunks/69-a0d2778b274339b5.js",
       "static/chunks/main-app-2bf8c03815a09153.js",
       "static/chunks/app/privacidad/page-9935a39d91b0a18d.js"
-    ],
-    "/recuperar/page": [
-      "static/chunks/webpack-23284575fdefa211.js",
-      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
-      "static/chunks/69-a0d2778b274339b5.js",
-      "static/chunks/main-app-2bf8c03815a09153.js",
-      "static/chunks/51-ade30679f31a613f.js",
-      "static/chunks/app/recuperar/page-493c3e3a08414373.js"
     ],
     "/ranking/page": [
       "static/chunks/webpack-23284575fdefa211.js",
@@ -148,6 +141,21 @@
       "static/chunks/51-ade30679f31a613f.js",
       "static/chunks/714-80a446c7e055417a.js",
       "static/chunks/app/ranking/page-8a1c13638ec8f816.js"
+    ],
+    "/recuperar/page": [
+      "static/chunks/webpack-23284575fdefa211.js",
+      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
+      "static/chunks/69-a0d2778b274339b5.js",
+      "static/chunks/main-app-2bf8c03815a09153.js",
+      "static/chunks/51-ade30679f31a613f.js",
+      "static/chunks/app/recuperar/page-493c3e3a08414373.js"
+    ],
+    "/terminos/page": [
+      "static/chunks/webpack-23284575fdefa211.js",
+      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
+      "static/chunks/69-a0d2778b274339b5.js",
+      "static/chunks/main-app-2bf8c03815a09153.js",
+      "static/chunks/app/terminos/page-a2b6fc94bd27570c.js"
     ],
     "/reset-password/page": [
       "static/chunks/webpack-23284575fdefa211.js",
@@ -168,13 +176,6 @@
       "static/chunks/714-80a446c7e055417a.js",
       "static/chunks/296-b3ccb90b00cfa57c.js",
       "static/chunks/app/curso/[id]/page-d5b1c70ff8469590.js"
-    ],
-    "/terminos/page": [
-      "static/chunks/webpack-23284575fdefa211.js",
-      "static/chunks/fd9d1056-1aed8fe83ce75ace.js",
-      "static/chunks/69-a0d2778b274339b5.js",
-      "static/chunks/main-app-2bf8c03815a09153.js",
-      "static/chunks/app/terminos/page-a2b6fc94bd27570c.js"
     ]
   }
 }

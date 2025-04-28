@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { LucideTrash2, LucidePlus, LucideBookOpen } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -36,55 +37,79 @@ export default function AdminPage() {
       }
       await fetchCourses();
     })();
-  }, []);
+  }, [router, supabase]);
 
   const fetchCourses = async () => {
     const { data, error } = await supabase
       .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error) setCourses(data || []);
+    if (error) {
+      toast.error('Error cargando cursos: ' + error.message);
+    } else {
+      setCourses(data || []);
+    }
     setLoading(false);
   };
 
   const fetchModules = async (courseId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('modules')
       .select('*')
       .eq('course_id', courseId)
       .order('order_number');
-    setModules(prev => ({ ...prev, [courseId]: data || [] }));
+    if (error) {
+      toast.error('Error cargando módulos: ' + error.message);
+    } else {
+      setModules(prev => ({ ...prev, [courseId]: data || [] }));
+    }
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
+    if (!imageFile) {
+      toast.error('Seleccioná una imagen de portada.');
+      return null;
+    }
+
     const fileName = `${Date.now()}_${imageFile.name}`;
+    const toastId = toast.loading('Subiendo imagen de portada...');
+
     const { error: uploadError } = await supabase
       .storage
       .from('course-images')
       .upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
+
     if (uploadError) {
-      console.error('Error subiendo imagen:', uploadError.message);
+      toast.dismiss(toastId);
+      toast.error('Error subiendo imagen: ' + uploadError.message);
       return null;
     }
+
     const { data } = supabase
       .storage
       .from('course-images')
       .getPublicUrl(fileName);
-    return data?.publicUrl || null;
+
+    toast.dismiss(toastId);
+
+    if (!data?.publicUrl) {
+      toast.error('No se pudo obtener la URL pública de la imagen.');
+      return null;
+    }
+
+    return data.publicUrl;
   };
 
   const handleCreate = async () => {
     const { title, description, category, difficulty, price } = form;
     if (!title || !description || !category || !difficulty || !price || !imageFile) {
-      alert('Todos los campos son obligatorios, incluida la imagen.');
+      toast.error('Completa todos los campos incluyendo la imagen de portada.');
       return;
     }
+
     const imageUrl = await uploadImage();
-    if (!imageUrl) {
-      alert('Error al subir la imagen de portada');
-      return;
-    }
+    if (!imageUrl) return;
+
     const { error } = await supabase.from('courses').insert([{
       title,
       description,
@@ -93,9 +118,11 @@ export default function AdminPage() {
       difficulty,
       price: Number(price)
     }]);
+
     if (error) {
-      alert('Error al crear el curso: ' + error.message);
+      toast.error('Error al crear el curso: ' + error.message);
     } else {
+      toast.success('Curso creado con éxito');
       setForm({ title: '', description: '', category: '', difficulty: '', price: '' });
       setImageFile(null);
       await fetchCourses();
@@ -105,7 +132,12 @@ export default function AdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('¿Seguro que querés eliminar este curso?')) return;
     const { error } = await supabase.from('courses').delete().eq('id', id);
-    if (!error) await fetchCourses();
+    if (error) {
+      toast.error('Error al eliminar curso: ' + error.message);
+    } else {
+      toast.success('Curso eliminado');
+      await fetchCourses();
+    }
   };
 
   const toggleModules = async (courseId: string) => {
@@ -120,7 +152,7 @@ export default function AdminPage() {
   const handleModuleCreate = async (courseId: string) => {
     const { title, content, order_number } = newModule[courseId] || {};
     if (!title || !content || !order_number) {
-      alert('Todos los campos de módulo son obligatorios.');
+      toast.error('Todos los campos de módulo son obligatorios.');
       return;
     }
     const { error } = await supabase.from('modules').insert([{
@@ -130,8 +162,9 @@ export default function AdminPage() {
       order_number: Number(order_number)
     }]);
     if (error) {
-      alert('Error al crear módulo: ' + error.message);
+      toast.error('Error al crear módulo: ' + error.message);
     } else {
+      toast.success('Módulo creado');
       setNewModule(prev => ({ ...prev, [courseId]: {} }));
       await fetchModules(courseId);
     }
@@ -140,7 +173,12 @@ export default function AdminPage() {
   const handleModuleDelete = async (moduleId: string, courseId: string) => {
     if (!confirm('¿Eliminar este módulo?')) return;
     const { error } = await supabase.from('modules').delete().eq('id', moduleId);
-    if (!error) await fetchModules(courseId);
+    if (error) {
+      toast.error('Error al eliminar módulo: ' + error.message);
+    } else {
+      toast.success('Módulo eliminado');
+      await fetchModules(courseId);
+    }
   };
 
   const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -182,7 +220,7 @@ export default function AdminPage() {
               onChange={e => setForm({ ...form, price: e.target.value })}
               className="border p-2 rounded"
             />
-            <input
+            <textarea
               placeholder="Descripción"
               value={form.description}
               onChange={e => setForm({ ...form, description: e.target.value })}
