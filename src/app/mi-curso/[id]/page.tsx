@@ -29,7 +29,9 @@ interface ModuleWithSections {
   sections: Section[];
 }
 
-export default function CursoPrivadoPage() {
+const ADMIN_EXCLUDED_COURSE_ID = 'TU_ID_DE_PRUEBA'; // ← pon aquí tu curso de prueba
+
+export default function CursoContenidoPage() {
   const router = useRouter();
   const { id } = useParams();
   const supabase = createPagesBrowserClient();
@@ -41,26 +43,33 @@ export default function CursoPrivadoPage() {
 
   useEffect(() => {
     const init = async () => {
-      // 1️⃣ sesión
+      // 1️⃣ Obtener sesión
       const {
-        data: { session }
+        data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/login');
-        return;
+        return router.push('/login');
       }
-      // 2️⃣ verificar inscripción
-      const { data: ins } = await supabase
-        .from('user_courses')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('course_id', id)
-        .maybeSingle();
-      if (!ins) {
-        router.push(`/curso/${id}`);
-        return;
+
+      // 2️⃣ Verificar inscripción (o admin salvo excepción)
+      const isAdmin = session.user.user_metadata?.role === 'admin';
+      let enrolled = false;
+      if (isAdmin && id !== ADMIN_EXCLUDED_COURSE_ID) {
+        enrolled = true;
+      } else {
+        const { data: ins } = await supabase
+          .from('user_courses')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('course_id', id)
+          .maybeSingle();
+        enrolled = !!ins;
       }
-      // 3️⃣ cargar módulos y secciones
+      if (!enrolled) {
+        return router.push(`/curso/${id}`);
+      }
+
+      // 3️⃣ Cargar módulos y secciones
       const { data: mods } = await supabase
         .from('modules')
         .select('id, title, order_number')
@@ -143,7 +152,7 @@ export default function CursoPrivadoPage() {
         </nav>
       </aside>
 
-      {/* Content */}
+      {/* Contenido */}
       <section className="flex-1 p-8 overflow-y-auto">
         {selectedSection ? (
           <>
@@ -161,7 +170,7 @@ export default function CursoPrivadoPage() {
           </>
         ) : (
           <p className="text-center text-gray-500 mt-20">
-            Seleccioná un módulo y sección para empezar
+            Seleccioná un módulo y sección para comenzar
           </p>
         )}
       </section>
