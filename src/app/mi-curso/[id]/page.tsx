@@ -13,6 +13,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import remarkBreaks from 'remark-breaks'
 
 interface Section {
   id: string;
@@ -160,12 +161,12 @@ export default function CursoContenidoPage() {
               {selectedSection.order_number}. {selectedSection.title}
             </h1>
             <div className="prose prose-sky max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-              >
-                {selectedSection.content}
-              </ReactMarkdown>
+            <ReactMarkdown
+             remarkPlugins={[remarkGfm, remarkBreaks]}
+             rehypePlugins={[rehypeRaw]}
+           >
+             {selectedSection.content}
+           </ReactMarkdown>
             </div>
           </>
         ) : (
