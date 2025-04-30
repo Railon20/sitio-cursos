@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import {
   LucideArrowLeft,
   LucideChevronDown,
-  LucideChevronRight
+  LucideChevronRight,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import remarkBreaks from 'remark-breaks'
+import remarkBreaks from 'remark-breaks';
 
 interface Section {
   id: string;
@@ -49,7 +49,8 @@ export default function CursoContenidoPage() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
-        return router.push('/login');
+        router.push('/login');
+        return;
       }
 
       // 2️⃣ Verificar inscripción (o admin salvo excepción)
@@ -67,7 +68,8 @@ export default function CursoContenidoPage() {
         enrolled = !!ins;
       }
       if (!enrolled) {
-        return router.push(`/curso/${id}`);
+        router.push(`/curso/${id}`);
+        return;
       }
 
       // 3️⃣ Cargar módulos y secciones
@@ -107,15 +109,15 @@ export default function CursoContenidoPage() {
           <LucideArrowLeft className="w-4 h-4" /> Volver al inicio
         </Button>
         <nav>
-          {modules.map((mod) => {
+          {modules.map(mod => {
             const isOpen = !!openModules[mod.id];
             return (
               <div key={mod.id} className="mb-2">
                 <button
                   onClick={() =>
-                    setOpenModules((prev) => ({
+                    setOpenModules(prev => ({
                       ...prev,
-                      [mod.id]: !prev[mod.id]
+                      [mod.id]: !prev[mod.id],
                     }))
                   }
                   className="w-full flex justify-between items-center px-2 py-1 bg-white rounded hover:bg-gray-100"
@@ -131,7 +133,7 @@ export default function CursoContenidoPage() {
                 </button>
                 {isOpen && (
                   <ul className="mt-1 ml-4 space-y-1">
-                    {mod.sections.map((sec) => (
+                    {mod.sections.map(sec => (
                       <li key={sec.id}>
                         <button
                           onClick={() => setSelectedSection(sec)}
@@ -160,13 +162,13 @@ export default function CursoContenidoPage() {
             <h1 className="text-2xl font-bold mb-4">
               {selectedSection.order_number}. {selectedSection.title}
             </h1>
-            <div className="prose prose-sky max-w-none">
-            <ReactMarkdown
-             remarkPlugins={[remarkGfm, remarkBreaks]}
-             rehypePlugins={[rehypeRaw]}
-           >
-             {selectedSection.content}
-           </ReactMarkdown>
+            <div className="prose prose-sky max-w-none whitespace-pre-line">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                rehypePlugins={[rehypeRaw]}
+              >
+                {selectedSection.content}
+              </ReactMarkdown>
             </div>
           </>
         ) : (
